@@ -1,74 +1,109 @@
-# Handwritten Text Generation from Visual Archetypes
+# MuS: Handwritten Text Generation with Multimodal Representation for Accurate Character Structure
 
-This repository contains the reference code and dataset for the paper [Handwritten Text Generation from Visual Archetypes](https://arxiv.org/abs/2303.15269).
+This repository contains the official PyTorch implementation for the paper **"Handwritten Text Generation with Multimodal Representation for Accurate Character Structure"**.
 
-If you find it useful, please cite it as:
-```
-@inproceedings{pippi2023handwritten,
-  title={{Handwritten Text Generation from Visual Archetypes}},
-  author={Pippi, Vittorio and Cascianelli, Silvia and Cucchiara, Rita},
-  booktitle={Proceedings of the IEEE/CVF Conference on Computer Vision and Pattern Recognition},
-  year={2023}
+Our model, **MuS** (**Mu**ltimodal **S**tructural Generator), introduces a novel framework that leverages both symbolic (text) and visual (rendered image) representations to significantly improve the structural accuracy of generated handwritten text.
+
+If you find this work useful in your research, please consider citing:
+```bibtex
+@inproceedings{yourname2025mus,
+  title={{Handwritten Text Generation with Multimodal Representation for Accurate Character Structure}},
+  author={First Author and Second Author and Third Author},
+  booktitle={Proceedings of the ... Conference on ...},
+  year={2025}
 }
 ```
 
-![test](https://github.com/aimagelab/VATr/blob/main/files/model_dark.png?raw=true#gh-dark-mode-only)
-![test](https://github.com/aimagelab/VATr/blob/main/files/model_light.png?raw=true#gh-light-mode-only)
+![Model Architecture Dark](img/fig2.png?raw=true#gh-dark-mode-only)
+![Model Architecture Light](img/fig2.png?raw=true#gh-light-mode-only)
+*Overview of the proposed MuS architecture.*
+
+## Key Contributions
+- **Multimodal Content Encoder**: Fuses features from both text and its rendered image to capture fine-grained character structures.
+- **Text Structure Loss ($L_T$)**: A novel loss function that supervises content accuracy and structural integrity from an image-level perspective.
+- **State-of-the-Art Performance**: Achieves leading results on the IAM and CVL datasets in terms of generation quality (FID, GS, HWD) and content accuracy ($\Delta$CER, $\Delta$WER).
+
+![Qualitative Results](img/fig1.png?raw=true)
+*Our method (Ours) better preserves character proportions and alignment compared to SOTA methods, especially for challenging words like "way".*
 
 ## Installation
 
-```console
-conda create --name vatr python=3.9
-conda activate vatr
-conda install pytorch==1.13.1 torchvision==0.14.1 torchaudio==0.13.1 pytorch-cuda=11.7 -c pytorch -c nvidia
-git clone https://github.com/aimagelab/VATr.git && cd VATr
-pip install -r requirements.txt
-```
+1.  **Clone the repository and create a Conda environment:**
+    ```console
+    # We recommend Python 3.9+
+    conda create --name mus python=3.9
+    conda activate mus
+    ```
 
-From [this folder](https://drive.google.com/drive/folders/1FGJe2uCuK8T9HrFzY_Zc-KMIo0oPJGGY?usp=share_link) you have to download the files `IAM-32.pickle` and `resnet_18_pretrained.pth` and place them into the `files` folder.
+2.  **Install PyTorch and other dependencies:**
+    ```console
+    # Please adjust the CUDA version to match your system
+    conda install pytorch==2.1.0 torchvision==0.16.0 torchaudio==2.1.0 pytorch-cuda=11.8 -c pytorch -c nvidia
+    
+    # Clone this repository
+    git clone [https://github.com/your-username/MuS.git](https://github.com/your-username/MuS.git) && cd MuS
 
-```console
-gdown --folder "https://drive.google.com/drive/u/2/folders/1FGJe2uCuK8T9HrFzY_Zc-KMIo0oPJGGY"
-```
+    # Install required packages
+    pip install -r requirements.txt
+    ```
+
+3.  **Download pre-trained models and dataset files:**
+    
+    From [this Google Drive link](https://your-gdrive-link), please download the necessary files (e.g., pre-trained checkpoints, dataset pickles) and place them into the `checkpoints/` and `data/` folders respectively.
+    ```console
+    # Example using gdown (you may need to provide specific file IDs)
+    # pip install gdown
+    gdown --folder "YOUR_GDRIVE_FOLDER_ID" 
+    ```
+    You will need:
+    * `mus_iam.pth`: Our pre-trained model on the IAM dataset.
+    * `resnet18_pretrained.pth`: The pre-trained ResNet18 backbone for our encoders.
+    * `trocr-base-handwritten`: The TrOCR model used for evaluation.
+    * `iam_dataset.pickle`: Pre-processed IAM dataset file.
+
 
 ## Training
 
+To train the MuS model from scratch on the IAM dataset, run the following command:
+
 ```console
-python train.py
+python train.py --dataset IAM --name iam_experiment
 ```
 
 Useful arguments:
 ```console
 python train.py
-        --feat_model_path PATH  # path to the pretrained resnet 18 checkpoint. If none, the resnet will be trained from scratch
-        --dataset DATASET       # dataset to use. Default IAM
-        --resume                # resume training from the last checkpoint with the same name
-        --wandb                 # use wandb for logging
+        --dataset DATASET          # Dataset to use (e.g., IAM, CVL). Default: IAM.
+        --data_path PATH           # Path to the pre-processed dataset pickle file.
+        --checkpoints_dir PATH     # Directory to save model checkpoints. Default: ./checkpoints
+        --resume                   # Resume training from the last checkpoint with the same name.
+        --wandb                    # Use Weights & Biases for logging.
 ```
 
-### Pretraining dataset
-The model `resnet_18_pretrained.pth` was pretrained by using this dataset: [download link](https://drive.google.com/drive/folders/1Xs_rR0EWt09-K6vmlvAI8pwsrmHSknC8?usp=share_link)
+## Generation / Inference
 
+### Generate Samples for Evaluation
 
-## Generate styled Handwtitten Text Images
-
-To generate all samples for FID evaluation you can use the following script:
+To generate all samples for FID/KID/HWD evaluation (replicating the IAM test set), you can use the following script:
 
 ```console
-python generate_fakes.py --checkpoint files/vatr.pth
+python generate_fakes.py --checkpoint checkpoints/mus_iam.pth --dataset IAM --output_dir ./results/iam_fakes
 ```
 
-To generate a specific text with a given input style folder containing images of handwritten single words you can use the following script:
+### Generate Custom Text
+
+To generate a specific text with a given style, provide a folder containing sample images from the desired writer.
 
 ```console
-python generator.py --style-folder "files/style_samples/00" --checkpoint "files/vatr.pth" --output "files/output_00.png" --text "That's one small step for man, one giant leap for mankind ΑαΒβΓγΔδ"
+python generator.py --style-folder "path/to/your/style_images" \
+                    --checkpoint "checkpoints/mus_iam.pth" \
+                    --output "results/my_generation.png" \
+                    --text "May the force be with you."
 ```
 
+Below is a qualitative comparison showing the output of our model against other methods for the text *"May the force be with you."* and *"Next year is a new beginning."*
 
-Output for `That's one small step for man, one giant leap for mankind ΑαΒβΓγΔδ`:
+![Generation Examples](img/fig4.png?raw=true)
 
-![test](https://github.com/aimagelab/VATr/blob/main/files/output_00.png?raw=true)
-
-
-### Implementation details
-This work is partially based on the code released for [Handwriting-Transformers](https://github.com/ankanbhunia/Handwriting-Transformers)
+## Acknowledgements
+This work is partially inspired by the code and methodologies from previous outstanding research in HTG, including [HWT](https://github.com/ankanbhunia/Handwriting-Transformers) and [VATr](https://github.com/aimagelab/VATr). We thank the authors for making their work publicly available.
